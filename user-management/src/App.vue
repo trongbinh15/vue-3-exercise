@@ -1,11 +1,17 @@
 <template>
   <v-app>
     <v-main>
-      <HelloWorld/>
+      <v-progress-linear :indeterminate="loading" color="blue darken-2"></v-progress-linear>
+      <v-container>
+        <router-view></router-view>
+      </v-container>
     </v-main>
   </v-app>
 </template>
 
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import { useStore } from 'vuex';
+import { computed } from 'vue';
+const store = useStore();
+const loading = computed(() => store.state.base.loading);
 </script>
