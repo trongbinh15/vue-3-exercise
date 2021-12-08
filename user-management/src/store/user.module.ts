@@ -1,24 +1,25 @@
+import { useToast } from "vue-toastification";
+import { ActionTree, GetterTree, MutationTree } from 'vuex';
+import { User } from "../models/user.model";
 import userService from "../services/user.service";
 import {
-  ADD_NEW_USER,
-  LOAD_USER_LIST,
-  SET_ADDED_USER,
-  SET_UPDATED_USER,
+  ADD_NEW_USER, DELETE_USER, LOAD_USER_LIST,
+  SET_ADDED_USER, SET_DELETED_USER, SET_UPDATED_USER,
   SET_USER_LIST,
-  UPDATE_USER,
-  DELETE_USER,
-  SET_DELETED_USER,
+  UPDATE_USER
 } from "./actions.type";
-
-import { useToast } from "vue-toastification";
 
 const toast = useToast();
 
-const state = {
+type UserState = {
+  userList: User[];
+}
+
+const state: UserState = {
   userList: [],
 };
 
-const actions = {
+const actions: ActionTree<UserState, any> = {
   async [LOAD_USER_LIST]({ commit }) {
     const res = await userService.getAll();
     commit(SET_USER_LIST, res.data);
@@ -45,35 +46,36 @@ const actions = {
   },
 };
 
-const getters = {
+const getters: GetterTree<UserState, any> = {
   users(state) {
     return state.userList;
   },
   userById(state) {
-    return (id) => {
+    return (id: string) => {
       return state.userList.find((user) => user.id === id);
     };
   },
 };
 
-const mutations = {
+const mutations: MutationTree<UserState > = {
   [SET_USER_LIST](state, userList) {
     state.userList = userList;
   },
-  [SET_ADDED_USER](state, user) {
+  [SET_ADDED_USER](state, user: User) {
     state.userList.push(user);
   },
-  [SET_UPDATED_USER](state, user) {
+  [SET_UPDATED_USER](state, user: User) {
     const index = state.userList.findIndex((u) => u.id === user.id);
     state.userList[index] = user;
   },
-  [SET_DELETED_USER](state, id) {
+  [SET_DELETED_USER](state, id: string) {
     const index = state.userList.findIndex((u) => u.id === id);
     state.userList.splice(index, 1);
   },
 };
 
 export default {
+  namespaced: true,
   state: () => state,
   actions,
   getters,

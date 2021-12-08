@@ -1,0 +1,1 @@
+export const combineString = (...args: string[]) => args.join('/');

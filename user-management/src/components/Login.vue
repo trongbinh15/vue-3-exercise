@@ -18,49 +18,44 @@
         </v-container>
     </v-form>
 </template>
-<script>
-import { watch } from 'vue';
+<script lang="ts">
 import { useField, useForm } from 'vee-validate';
-import { mapActions, mapGetters } from 'vuex';
+import { computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
 import * as yup from 'yup';
-import { LOG_IN, LOG_OUT } from '../store/actions.type';
+import { combineString } from '../helpers';
+import { LOG_IN } from '../store/actions.type';
+
+const withPrefix = (args: string) => combineString('base', args);
 export default {
     setup() {
-        const schema = yup.object().shape({
-            email: yup.string().required('Email is required').email('Email is invalid'),
-            password: yup.string().required('Password is required'),
-        });
-        const { meta, errors } = useForm({
-            validationSchema: schema,
-        });
+        const { meta, errors } = useForm();
+        const store = useStore();
+        const router = useRouter();
 
-        const { value: password } = useField('password');
-        const { value: email } = useField('email');
+        const { value: password } = useField('password', yup.string().required('Password is required'));
+        const { value: email } = useField('email', yup.string().required('Email is required').email('Email is invalid'));
+        const currentUser = computed(() => store.getters[withPrefix('currentUser')] );
+        const login = (email: string) => store.dispatch(withPrefix(LOG_IN), email);
+        const onLogin = async () => {
+            if (meta.value.valid) {
+            await login(email.value as string);
+            }
+        };
+
+        watch(currentUser, (newValue) => {
+            if(newValue){
+                router.push('/');
+            }
+        });
 
         return {
             password,
             email,
             meta,
-            errors
-        }
-    },
-    computed:{
-        ...mapGetters(['currentUser'])
-    },
-    methods: {
-        ...mapActions({
-            login: LOG_IN,
-            logout: LOG_OUT
-        }),
-        async onLogin() {
-            await this.login(this.email);
-        }
-    },
-    watch: {
-        currentUser(newUser, oldUser) {
-            if(newUser){
-                this.$router.push('/');
-            }
+            errors,
+            onLogin,
         }
     },
 }

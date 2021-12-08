@@ -2,7 +2,7 @@
 	<div class="header">
 		<h1>List users</h1>
 		<div v-if="currentUser">
-			<span>Welcome {{currentUser.name}}</span>
+			<span>Welcome {{ currentUser.name }}</span>
 			<button @click="logout" color="primary">, logout</button>
 		</div>
 	</div>
@@ -25,42 +25,60 @@
 		</tr>
 	</table>
 </template>
-<script>
-import { mapGetters, mapActions } from "vuex";
-import { DELETE_USER, LOAD_USER_LIST,  LOG_OUT } from '../store/actions.type';
+<script lang="ts">
+import { onMounted, watch, computed } from 'vue';
+import { useRouter } from "vue-router";
+import { useStore } from "vuex";
+import { combineString } from "../helpers";
+import { DELETE_USER, LOAD_USER_LIST, LOG_OUT } from '../store/actions.type';
+
+const withPrefix = (prefix: string) => (args: string) => combineString(prefix, args);
+const withUserPrefix = withPrefix('users');
+const withBasePrefix = withPrefix('base');
 
 export default {
-	name: 'UserList',
-	computed: {
-		...mapGetters(["users", "currentUser"])
-	},
-	methods: {
-		...mapActions({
-			loadUserList: LOAD_USER_LIST,
-			deleteUser: DELETE_USER,
-			logout: LOG_OUT
-		}),
-		onEdit(id) {
-			this.$router.push({ name: 'users', params: { id } });
-		},
-		onAdd() {
-			this.$router.push({ name: 'users', params: { id: 'new' } });
-		},
-		async onDelete(id) {
-			await this.deleteUser(id);
-		},
-	},
+	setup() {
+		const store = useStore();
+		const router = useRouter();
+		const users = computed(() => store.getters[withUserPrefix('users')]);
+		const currentUser = computed(() => store.getters[withBasePrefix('currentUser')]);
 
-    watch: {
-        currentUser(newUser, oldUser) {
-            if(!newUser){
-                this.$router.go();
-            }
-        }
-    },
-	async mounted() {
-		await this.loadUserList();
-	}
+		const loadUserList = () => store.dispatch(withUserPrefix(LOAD_USER_LIST));
+		const deleteUser = (id: number) => store.dispatch(withUserPrefix(DELETE_USER), id);
+		const logout = () => store.dispatch(withBasePrefix(LOG_OUT));
+
+		const onEdit = (id: number) => {
+			router.push({ name: 'users', params: { id } });
+		};
+
+		const onAdd = () => {
+			router.push({ name: 'users', params: { id: 'new' } });
+		};
+		const onDelete = (id: number) => {
+			deleteUser(id);
+		};
+
+		watch(currentUser, () => {
+			if (!currentUser.value) {
+				router.go(0);
+			}
+		});
+
+		onMounted(async () => {
+			await loadUserList();
+		});
+
+		return {
+			users,
+			currentUser,
+			loadUserList,
+			deleteUser,
+			onEdit,
+			onAdd,
+			onDelete,
+			logout
+		}
+	},
 }
 </script>
 <style scoped>

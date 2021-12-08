@@ -1,12 +1,13 @@
+import { User } from "../models/user.model";
 import http from "./http-commom";
 class UserService {
   getAll() {
-    return http.get("/users");
+    return http.get<User[]>("/users");
   }
-  getDetail(id) {
-    return http.get(`/users/${id}`);
+  getDetail(id: string) {
+    return http.get<User>(`/users/${id}`);
   }
-  getUserByEmail(email) {
+  getUserByEmail(email: string): Promise<User> {
     return new Promise(async (resolve, reject) => {
       const all = await this.getAll();
       const user = all.data.find((x) => x.email === email);
@@ -17,13 +18,13 @@ class UserService {
       }
     });
   }
-  addOne(info) {
-    return http.post(`/users`, info);
+  addOne(info: User) {
+    return http.post<User>(`/users`, info);
   }
-  updateOne(info) {
-    return http.put(`/users/${info.id}`, info);
+  updateOne(info: User) {
+    return http.put<User>(`/users/${info.id}`, info);
   }
-  deleteOne(id) {
+  deleteOne(id: string) {
     return http.delete(`/users/${id}`);
   }
 }

@@ -23,83 +23,84 @@
         </v-container>
     </v-form>
 </template>
-<script>
-import { mapActions, mapGetters } from 'vuex'
-import { useField, useForm } from 'vee-validate';
-import * as yup from 'yup';
+<script lang="ts">
 import { v4 as uuid } from 'uuid';
+import { useField, useForm } from 'vee-validate';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+import * as yup from 'yup';
+import { combineString } from '../helpers';
+import { User } from '../models/user.model';
 import { ADD_NEW_USER, UPDATE_USER } from '../store/actions.type';
+
+interface FormField {
+    email: string;
+    phone: string;
+    name: string;
+}
+
+const withPrefix = (args: string) => combineString('users', args);
+
 export default {
     setup() {
-        const schema = yup.object().shape({
-            name: yup.string().min(3, 'Name must be at least 3 characters'),
-            phone: yup.string().required('Phone is required'),
-            email: yup.string().required('Email is required').email('Email is invalid'),
-        });
-        const { meta, errors } = useForm({
-            validationSchema: schema,
-        });
+        const store = useStore();
+        const route = useRoute();
+        const router = useRouter();
+        const { meta, errors } = useForm<FormField>();
 
-        const { value: name } = useField('name');
-        const { value: phone } = useField('phone');
-        const { value: email } = useField('email');
+        const { value: name } = useField('name', yup.string().required('Name is required'));
+        const { value: phone } = useField('phone', yup.string().required('Phone is required'));
+        const { value: email } = useField('email', yup.string().required('Email is required').email('Email is invalid'));
+        const userById = (id: string) => store.getters[withPrefix('userById')](id);
+
+        const isNew = computed(() => route.params.id === 'new');
+        const updateUser = (payload: User) => store.dispatch(withPrefix(UPDATE_USER), payload);
+        const createUser = (payload: User) => store.dispatch(withPrefix(ADD_NEW_USER), payload);
+
+        const onSubmit = async () => {
+            if (!meta.value.valid) return;
+            if (isNew.value) {
+                await createUser({
+                    id: uuid(),
+                    name: name.value as string,
+                    phone: phone.value as string,
+                    email: email.value as string,
+                });
+            } else if (!isNew.value) {
+                await updateUser({
+                    id: route.params.id as string,
+                    name: name.value as string,
+                    phone: phone.value as string,
+                    email: email.value as string,
+                })
+            }
+        };
+
+        const user = computed(() => userById(route.params.id as string));
+
+        const onBack = () => {
+            router.go(-1);
+        }
+
+        name.value = !isNew.value ? user.value.name : name.value;
+        phone.value = !isNew.value ? user.value.phone : phone.value;
+        email.value = !isNew.value ? user.value.email : email.value;
 
         return {
             name,
+            route,
             phone,
             email,
             meta,
-            errors
+            errors,
+            isNew,
+            updateUser,
+            createUser,
+            onSubmit,
+            onBack
         }
     },
-    computed: {
-        ...mapGetters(['userById']),
-        user() {
-            return this.userById(this.$route.params.id)
-        },
-        isNew() {
-            return this.$route.params.id === 'new'
-        }
-    },
-    methods: {
-        ...mapActions({
-            updateUser: UPDATE_USER,
-            createUser: ADD_NEW_USER
-        }),
-        async onSubmit() {
-            if (!this.meta.valid) return;
-            if (this.isNew) {
-                await this.createUser({
-                    id: uuid(),
-                    name: this.name,
-                    phone: this.phone,
-                    email: this.email
-                });
-            } else if (!this.isNew) {
-                await this.updateUser({
-                    id: this.$route.params.id,
-                    name: this.name,
-                    phone: this.phone,
-                    email: this.email
-                })
-            }
-        },
-        onBack() {
-            this.$router.go(-1);
-        }
-    },
-    created() {
-        if (this.user) {
-            this.name = this.user.name;
-            this.phone = this.user.phone;
-            this.email = this.user.email;
-        }
-    },
-    beforeRouteLeave(to, from, next) {
-        //confirm 
-        next();
-    }
-
 }
 </script>
 <style scoped>
