@@ -25,7 +25,7 @@
 		</tr>
 	</table>
 </template>
-<script lang="ts">
+<script setup lang="ts">
 import { onMounted, watch, computed } from 'vue';
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
@@ -36,50 +36,36 @@ const withPrefix = (prefix: string) => (args: string) => combineString(prefix, a
 const withUserPrefix = withPrefix('users');
 const withBasePrefix = withPrefix('base');
 
-export default {
-	setup() {
-		const store = useStore();
-		const router = useRouter();
-		const users = computed(() => store.getters[withUserPrefix('users')]);
-		const currentUser = computed(() => store.getters[withBasePrefix('currentUser')]);
+const store = useStore();
+const router = useRouter();
+const users = computed(() => store.getters[withUserPrefix('users')]);
+const currentUser = computed(() => store.getters[withBasePrefix('currentUser')]);
 
-		const loadUserList = () => store.dispatch(withUserPrefix(LOAD_USER_LIST));
-		const deleteUser = (id: number) => store.dispatch(withUserPrefix(DELETE_USER), id);
-		const logout = () => store.dispatch(withBasePrefix(LOG_OUT));
+const loadUserList = () => store.dispatch(withUserPrefix(LOAD_USER_LIST));
+const deleteUser = (id: number) => store.dispatch(withUserPrefix(DELETE_USER), id);
+const logout = () => store.dispatch(withBasePrefix(LOG_OUT));
 
-		const onEdit = (id: number) => {
-			router.push({ name: 'users', params: { id } });
-		};
+const onEdit = (id: number) => {
+	router.push({ name: 'users', params: { id } });
+};
 
-		const onAdd = () => {
-			router.push({ name: 'users', params: { id: 'new' } });
-		};
-		const onDelete = (id: number) => {
-			deleteUser(id);
-		};
+const onAdd = () => {
+	router.push({ name: 'users', params: { id: 'new' } });
+};
+const onDelete = (id: number) => {
+	deleteUser(id);
+};
 
-		watch(currentUser, () => {
-			if (!currentUser.value) {
-				router.go(0);
-			}
-		});
+watch(currentUser, () => {
+	if (!currentUser.value) {
+		router.go(0);
+	}
+});
 
-		onMounted(async () => {
-			await loadUserList();
-		});
+onMounted(async () => {
+	await loadUserList();
+});
 
-		return {
-			users,
-			currentUser,
-			loadUserList,
-			deleteUser,
-			onEdit,
-			onAdd,
-			onDelete,
-			logout
-		}
-	},
-}
 </script>
 <style scoped>
 table {
